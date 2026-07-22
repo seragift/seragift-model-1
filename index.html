@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>A Little Surprise 💖</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   CONFIG-DRIVEN BIRTHDAY / ANNIVERSARY GIFT SITE
+   Soft Pink Luxury · Glassmorphism · Single File
+   Edit values inside the CONFIG object near the bottom of the
+   <script> to personalize everything (no need to touch CSS/HTML).
+   ============================================================ */
+
+:root{
+  --pink-50:  #FFF5F8;
+  --pink-100: #FFE6EF;
+  --pink-200: #FFD1E3;
+  --pink-300: #FFB6D5;
+  --pink-500: #FF84BA;
+  --pink-600: #FF4F9A;
+  --white: #FFFFFF;
+  --ink: #7A3A57;
+  --ink-soft: #9C5975;
+  --shadow-soft: 0 16px 36px -12px rgba(255, 79, 154, 0.26);
+  --shadow-card: 0 22px 44px -16px rgba(255, 79, 154, 0.32);
+  --radius-xl: 32px;
+  --radius-lg: 24px;
+  --ease: cubic-bezier(.22,1,.36,1);
+}
+
+*{ box-sizing: border-box; }
+html,body{
+  margin:0; padding:0; height:100%;
+  overflow-x:hidden;
+  background: linear-gradient(180deg, var(--pink-50), var(--pink-100) 40%, var(--pink-200));
+  font-family:'Nunito', sans-serif;
+  color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+}
+h1,h2,h3, .btn, .brand-font{ font-family:'Poppins', sans-serif; }
+
+button{ font-family:inherit; border:none; cursor:pointer; background:none; }
+img{ max-width:100%; display:block; }
+
+/* ---------- Persistent ambient background layer ---------- */
+.bg-fx{
+  position:fixed; inset:0; pointer-events:none; z-index:1; overflow:hidden;
+  contain: strict;
+}
+/* Soft edge via multi-stop gradient instead of filter:blur — filter is one
+   of the priciest paint operations on mobile GPUs, this looks just as soft
+   at a fraction of the compositing cost. */
+.bg-fx .bubble{
+  position:absolute; border-radius:50%;
+  background: radial-gradient(circle at 32% 32%,
+    rgba(255,255,255,.65) 0%,
+    rgba(255,255,255,.32) 30%,
+    rgba(255,132,186,.16) 55%,
+    rgba(255,132,186,0) 75%);
+  animation: floatBubble linear infinite;
+  transform: translateZ(0);
+  will-change: transform;
+}
+.bg-fx .heart{
+  position:absolute; top:-8%;
+  animation: fallHeart linear infinite;
+  will-change: transform, opacity;
+}
+.bg-fx .spark{
+  position:absolute;
+  animation: twinkle ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes floatBubble{
+  0%{ transform: translate(0,0) scale(1); }
+  50%{ transform: translate(14px,-26px) scale(1.06); }
+  100%{ transform: translate(0,0) scale(1); }
+}
+@keyframes fallHeart{
+  0%{ transform: translateY(-10vh) translateX(0) rotate(0deg); opacity:0; }
+  8%{ opacity:.9; }
+  92%{ opacity:.85; }
+  100%{ transform: translateY(112vh) translateX(var(--drift,20px)) rotate(25deg); opacity:0; }
+}
+@keyframes twinkle{
+  0%, 100%{ transform: scale(.6) rotate(0deg); opacity:.15; }
+  50%{ transform: scale(1.15) rotate(20deg); opacity:.95; }
+}
+
+/* ---------- App scroll container ----------
+   No free scrolling: navigation only happens via the on-screen buttons
+   (app.scrollTo in JS). overflow:hidden + touch-action:none blocks
+   swipe/wheel/trackpad gestures from moving between sections. */
+.app{
+  position:relative; z-index:2;
+  height:100dvh;
+  overflow:hidden;
+  scroll-behavior:smooth;
+  overscroll-behavior:none;
+  touch-action:none;
+}
+.app.hidden{ display:none; }
+.app::-webkit-scrollbar{ display:none; }
+
+.screen{
+  min-height:100dvh;
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  scroll-snap-align:start;
+  scroll-snap-stop:always;
+  padding: 32px 20px;
+  /* Skip layout/paint work for sections off-screen — big win on long
+     pages with images, restored automatically as each scrolls into view. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 100dvh;
+}
+
+/* ---------- Loading screen ---------- */
+.loading-screen{
+  position:fixed; inset:0; z-index:50;
+  display:flex; align-items:center; justify-content:center;
+  background: linear-gradient(160deg, var(--pink-100), var(--pink-300));
+  transition: opacity .7s var(--ease), visibility .7s var(--ease);
+}
+.loading-screen.fade-out{ opacity:0; visibility:hidden; pointer-events:none; }
+.loader-wrap{ text-align:center; }
+.progress-track{
+  width:250px; height:8px; border-radius:999px;
+  background: rgba(255,255,255,.6);
+  box-shadow: inset 0 1px 4px rgba(255,79,154,.25);
+  overflow:hidden;
+  margin: 0 auto 18px;
+}
+.progress-fill{
+  height:100%; width:0%; border-radius:999px;
+  background: linear-gradient(90deg, var(--pink-500), var(--pink-600));
+  transition: width .1s linear;
+}
+.loading-text{
+  font-weight:800; color: var(--pink-600);
+  font-size:16px; letter-spacing:.3px;
+  animation: pulseSoft 1.4s ease-in-out infinite;
+}
+@keyframes pulseSoft{ 0%,100%{opacity:1;} 50%{opacity:.55;} }
+
+/* ---------- Glass card ---------- */
+.card{
+  width:100%; max-width:420px;
+  background: rgba(255,255,255,.78);
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  border: 1px solid rgba(255,255,255,.6);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  padding: 40px 28px;
+  text-align:center;
+  opacity:0; transform: translateY(28px) scale(.97);
+  transition: opacity .6s var(--ease), transform .6s var(--ease);
+}
+/* Low-power devices: drop backdrop-filter entirely (it's the single most
+   expensive property here on weak mobile GPUs) and fall back to a plain
+   frosted-looking solid card. Toggled by JS device-capability check. */
+.lite .card{ backdrop-filter:none; -webkit-backdrop-filter:none; background: rgba(255,255,255,.94); }
+.lite .bg-fx .bubble{ background: radial-gradient(circle at 32% 32%, rgba(255,255,255,.5) 0%, rgba(255,132,186,.12) 55%, rgba(255,132,186,0) 75%); }
+.screen.in-view .card{ opacity:1; transform: translateY(0) scale(1); }
+
+.btn{
+  display:inline-flex; align-items:center; gap:8px;
+  margin-top: 26px;
+  padding: 15px 30px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--pink-200), var(--pink-300));
+  color: var(--pink-600);
+  font-weight:800; font-size:15px;
+  box-shadow: 0 12px 24px -8px rgba(255,79,154,.4);
+  transition: transform .2s var(--ease);
+  position:relative; overflow:hidden;
+}
+.btn:active{ transform: scale(.94); }
+.btn .ripple{
+  position:absolute; border-radius:50%; background: rgba(255,255,255,.6);
+  transform: scale(0); animation: ripple .6s ease-out;
+  pointer-events:none;
+}
+@keyframes ripple{ to{ transform: scale(3); opacity:0; } }
+.btn.hidden-btn{ opacity:0; pointer-events:none; transform: translateY(10px); }
+.btn.show-btn{ opacity:1; pointer-events:auto; transform: translateY(0); transition: opacity .5s var(--ease), transform .5s var(--ease); }
+
+/* ---------- Gift card section ---------- */
+.gift-image-wrap{
+  width:220px; height:220px; margin: 0 auto 8px;
+  display:flex; align-items:center; justify-content:center;
+}
+.gift-image-wrap img{ width:100%; height:100%; object-fit:contain; animation: bounceSoft 3.4s ease-in-out infinite; }
+@keyframes bounceSoft{ 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(-10px);} }
+.gift-card.tapped .card{ transform: scale(.94); }
+
+/* ---------- Greeting typing ---------- */
+.greeting-title{ font-size: 26px; font-weight:800; color: var(--pink-600); margin: 0 0 14px; }
+.greeting-msg{ font-size:15.5px; line-height:1.7; color: var(--ink-soft); min-height: 90px; }
+.caret{ display:inline-block; width:2px; background: var(--pink-600); margin-left:2px; animation: blinkCaret .8s step-end infinite; }
+@keyframes blinkCaret{ 50%{ opacity:0; } }
+
+/* ---------- Love meter ---------- */
+.meter-wrap{ position:relative; width:230px; height:130px; margin: 0 auto 6px; }
+.meter-arc{ width:100%; height:100%; }
+.meter-needle{
+  position:absolute; left:50%; bottom:6px; width:4px; height:92px;
+  background: linear-gradient(180deg, var(--pink-600), var(--ink));
+  border-radius: 4px; transform-origin: bottom center;
+  transform: translateX(-50%) rotate(-88deg);
+  transition: transform 2.2s var(--ease);
+  box-shadow: 0 0 10px rgba(255,79,154,.5);
+  will-change: transform;
+}
+.meter-needle::after{
+  content:''; position:absolute; bottom:-9px; left:50%; transform: translateX(-50%);
+  width:16px; height:16px; border-radius:50%;
+  background: var(--pink-600); box-shadow: 0 0 0 4px rgba(255,132,186,.35);
+}
+.meter-needle.animate{ transform: translateX(-50%) rotate(var(--needle-deg, 70deg)); }
+.blessing-title{ font-size:22px; font-weight:800; color:var(--pink-600); margin: 10px 0 20px; }
+.counters{ display:grid; grid-template-columns: repeat(4,1fr); gap:8px; }
+.counter-box{
+  background: var(--pink-100); border-radius:16px; padding: 12px 4px;
+}
+.counter-num{ font-size:22px; font-weight:800; color: var(--pink-600); font-family:'Poppins',sans-serif; }
+.counter-label{ font-size:11.5px; color: var(--ink-soft); margin-top:2px; }
+
+/* ---------- Gallery ---------- */
+.gallery-wrap{ max-width: 520px; width:100%; text-align:center; }
+
+/* Framed "photo card": white mat + soft shadow, consistent across layouts */
+.gallery-item{
+  position:relative; border-radius:20px; overflow:hidden;
+  background: var(--white);
+  padding:6px;
+  box-shadow: 0 14px 28px -10px rgba(255,79,154,.32);
+  cursor:pointer;
+  opacity:0; transform: translateY(18px) scale(.94);
+  transition: opacity .55s var(--ease), transform .55s var(--ease);
+}
+.screen.in-view .gallery-item{ opacity:1; transform: translateY(0) scale(1) rotate(var(--tilt,0deg)); }
+.gallery-item img{
+  width:100%; height:100%; object-fit:cover; border-radius:15px; display:block;
+  transition: transform .18s ease;
+}
+.gallery-item:active img{ transform: scale(.93); }
+
+/* 1 photo — single hero card */
+.gallery-grid{ display:grid; gap:14px; margin-bottom: 28px; }
+.gallery-grid.count-1 .gallery-item{ aspect-ratio: 4/5; }
+
+/* 2 photos — clean side-by-side pair */
+.gallery-grid.count-2{ grid-template-columns: repeat(2, 1fr); }
+.gallery-grid.count-2 .gallery-item{ aspect-ratio: 3/4; }
+
+/* 3+ photos — masonry columns avoid the awkward leftover-tile look
+   that a fixed 2-col grid gets at odd counts (3, 5, 7...) */
+.gallery-masonry{
+  columns: 2; column-gap:14px; margin-bottom:28px;
+}
+@media (min-width: 640px){ .gallery-masonry{ columns:3; } }
+.gallery-masonry .gallery-item{ margin-bottom:14px; break-inside:avoid; display:inline-block; width:100%; }
+.gallery-masonry .gallery-item img{ height:auto; aspect-ratio:auto; }
+
+.outro-title{ font-size:22px; font-weight:800; color: var(--pink-600); line-height:1.5; }
+
+/* ---------- Lightbox ---------- */
+.lightbox{
+  position:fixed; inset:0; z-index:80;
+  background: rgba(40,10,25,.88);
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; visibility:hidden; transition: opacity .4s ease, visibility .4s ease;
+  touch-action: pan-y;
+}
+.lightbox.show{ opacity:1; visibility:visible; }
+
+/* The stage is what actually performs the FLIP move/scale animation
+   between the tapped thumbnail and the centered full view — keeping it
+   separate from #lightboxImg lets the tap-to-zoom scale nest cleanly
+   inside it without the two transforms fighting each other. */
+.lightbox-stage{
+  display:inline-flex; max-width:90vw; max-height:80vh;
+}
+.lightbox-stage img{
+  max-width:90vw; max-height:80vh; border-radius:14px; display:block;
+  transition: transform .35s var(--ease);
+  transform: scale(1);
+}
+.lightbox-stage img.zoomed{ transform: scale(1.8); }
+.lightbox-close{
+  position:absolute; top:26px; right:22px; width:42px; height:42px;
+  border-radius:50%; background: rgba(255,255,255,.15); color:#fff;
+  font-size:20px; display:flex; align-items:center; justify-content:center;
+  z-index:2;
+}
+.lightbox-hint{ position:absolute; bottom:24px; color: rgba(255,255,255,.6); font-size:12.5px; }
+
+/* ---------- Section-specific accents ---------- */
+.eyebrow-heart{ font-size:13px; opacity:.6; margin-bottom:4px; }
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce){
+  .bg-fx .bubble,.bg-fx .heart,.bg-fx .spark,
+  .gift-image-wrap img,.meter-needle,.lightbox-stage{ animation:none !important; transition:none !important; }
+}
+
+/* ---------- Small screens polish ---------- */
+@media (max-width:360px){
+  .card{ padding: 32px 20px; }
+  .meter-wrap{ width:200px; height:112px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Ambient background: floating hearts / sparkles / blur bubbles -->
+<div class="bg-fx" id="bgFx"></div>
+
+<!-- Loading screen -->
+<div class="loading-screen" id="loadingScreen">
+  <div class="loader-wrap">
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <p class="loading-text">Loading Cute Surprise... 💖</p>
+  </div>
+</div>
+
+<main class="app hidden" id="app">
+
+  <!-- SECTION 2: Gift Card -->
+  <section class="screen gift-card" id="sec-gift" data-section>
+    <div class="card">
+      <div class="gift-image-wrap" id="giftImageWrap"></div>
+      <button class="btn" id="btnGift">💖 <span id="giftBtnLabel">Tap Love</span></button>
+    </div>
+  </section>
+
+  <!-- SECTION 3: Greeting Card 1 -->
+  <section class="screen greeting1" id="sec-greeting1" data-section>
+    <div class="card">
+      <h1 class="greeting-title" id="greeting1Title"></h1>
+      <p class="greeting-msg"><span id="typedMessage"></span><span class="caret" id="caret1"></span></p>
+      <button class="btn hidden-btn" id="btnGreeting1">💗 Click This</button>
+    </div>
+  </section>
+
+  <!-- SECTION 4: Love Meter -->
+  <section class="screen love-meter" id="sec-lovemeter" data-section>
+    <div class="card">
+      <div class="meter-wrap">
+        <svg class="meter-arc" viewBox="0 0 200 110">
+          <defs>
+            <linearGradient id="arcGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#FFD1E3"/>
+              <stop offset="50%" stop-color="#FF84BA"/>
+              <stop offset="100%" stop-color="#FF4F9A"/>
+            </linearGradient>
+          </defs>
+          <path d="M10,100 A90,90 0 0,1 190,100" fill="none" stroke="url(#arcGrad)" stroke-width="16" stroke-linecap="round"/>
+        </svg>
+        <div class="meter-needle" id="meterNeedle"></div>
+      </div>
+      <div class="blessing-title">You've Been a Blessing 💖</div>
+      <div class="counters">
+        <div class="counter-box"><div class="counter-num" id="cDays">0</div><div class="counter-label">Hari</div></div>
+        <div class="counter-box"><div class="counter-num" id="cHours">0</div><div class="counter-label">Jam</div></div>
+        <div class="counter-box"><div class="counter-num" id="cMins">0</div><div class="counter-label">Menit</div></div>
+        <div class="counter-box"><div class="counter-num" id="cSecs">0</div><div class="counter-label">Detik</div></div>
+      </div>
+      <button class="btn hidden-btn" id="btnLoveMeter">💗 Click This</button>
+    </div>
+  </section>
+
+  <!-- SECTION 5: Greeting Card 2 -->
+  <section class="screen greeting2" id="sec-greeting2" data-section>
+    <div class="card">
+      <div class="gift-image-wrap" id="greeting2ImageWrap" style="width:180px;height:180px;"></div>
+      <p class="greeting-msg" id="greeting2Message"></p>
+      <button class="btn" id="btnGreeting2">💗 Click This</button>
+    </div>
+  </section>
+
+  <!-- SECTION 6: Photo Gallery -->
+  <section class="screen gallery" id="sec-gallery" data-section>
+    <div class="gallery-wrap">
+      <div id="galleryContainer"></div>
+      <p class="outro-title">Happy Birthday Once Again 🎂<br>Love You Forever 💖</p>
+    </div>
+  </section>
+
+</main>
+
+<!-- Fullscreen photo lightbox -->
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" id="lightboxClose">✕</button>
+  <div class="lightbox-stage" id="lightboxStage">
+    <img id="lightboxImg" src="" alt="photo">
+  </div>
+  <div class="lightbox-hint">Geser untuk lihat foto lain · Tap untuk zoom</div>
+</div>
+
+<!-- Background music (autoplay only, no visible control by design) -->
+<audio id="bgMusic" playsinline></audio>
+
+<script>
+/* ============================================================
+   ✏️  EDIT EVERYTHING HERE — this is the only section you need
+   to touch to personalize the whole site.
+   ============================================================ */
+const CONFIG = {
+  // --- Music ---
+  music: "",                 // direct URL to an mp3/ogg file
+  autoplay: true,
+  loop: true,
+
+  // --- Anniversary / relationship start date (YYYY-MM-DD) ---
+  startDate: "2023-05-14",
+
+  // --- Toggle sections on/off ---
+  loading:   true,
+  giftCard:  true,
+  greeting1: true,
+  loveMeter: true,
+  greeting2: true,
+  gallery:   true,
+
+  // --- Gift card (Section 2) ---
+  giftImage: "",              // URL to the hero image (leave "" for default heart)
+  giftButton: "Tap Love",
+
+  // --- Greeting 1 (Section 3) ---
+  title: "Happy Birthday 💖",
+  message: "Semoga hari ini penuh tawa, kejutan manis, dan semua hal yang bikin kamu senyum. Selamat ulang tahun!",
+
+  // --- Greeting 2 (Section 5) ---
+  greeting2Image: "",         // optional, leave "" to hide the image
+  message2: "Would you believe this tiny human is now someone super adorable and amazing? 💖 From baby cheeks to beautiful smiles, your charm is still undefeated ✨",
+
+  // --- Gallery (Section 6): 1–10 photo URLs ---
+  photos: [
+    "",
+    "",
+    "",
+    ""
+  ]
+};
+
+/* ============================================================
+   ENGINE — you shouldn't need to edit below this line
+   ============================================================ */
+(function(){
+  const DEFAULT_HEART_SVG = `data:image/svg+xml;utf8,${encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 90"><path d="M50 85 C10 60 -5 35 15 15 C30 0 48 5 50 25 C52 5 70 0 85 15 C105 35 90 60 50 85 Z" fill="%23FF84BA"/></svg>'
+  )}`;
+
+  /* ---------- Low-power device detection ----------
+     Keeps the same visual language everywhere but trims particle count
+     and drops backdrop-filter (the priciest paint op) on weak devices,
+     so frame rate stays close to 60fps across the board rather than
+     going all-in on effects that only strong phones can sustain. */
+  function isLowPower(){
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const mem = navigator.deviceMemory || 4;      // GB, Chrome/Android only
+    const cores = navigator.hardwareConcurrency || 4;
+    const smallViewport = Math.min(window.innerWidth, window.innerHeight) <= 380;
+    return reducedMotion || mem <= 3 || cores <= 4 || smallViewport;
+  }
+  const LITE = isLowPower();
+
+  /* ---------- Ambient background: hearts, sparkles, bubbles ----------
+     Counts are intentionally modest — transform/opacity-only animations
+     are cheap individually, but every extra layer still adds compositor
+     overhead, so we keep just enough for atmosphere, not a snowstorm. */
+  function buildBackgroundFX(){
+    const fx = document.getElementById('bgFx');
+    const frag = document.createDocumentFragment();
+    const counts = LITE ? { bubble:2, heart:6, spark:4 } : { bubble:4, heart:9, spark:6 };
+
+    for(let i=0;i<counts.bubble;i++){
+      const b = document.createElement('div');
+      b.className = 'bubble';
+      const size = 70 + Math.random()*110;
+      b.style.width = size+'px';
+      b.style.height = size+'px';
+      b.style.left = (Math.random()*90)+'%';
+      b.style.top = (Math.random()*90)+'%';
+      b.style.animationDuration = (7+Math.random()*6)+'s';
+      b.style.animationDelay = (Math.random()*4)+'s';
+      frag.appendChild(b);
+    }
+
+    for(let i=0;i<counts.heart;i++){
+      const h = document.createElement('div');
+      h.className = 'heart';
+      const size = 12 + Math.random()*16;
+      h.style.left = (Math.random()*100)+'%';
+      h.style.fontSize = size+'px';
+      h.style.setProperty('--drift', (Math.random()*60-30)+'px');
+      h.style.animationDuration = (8+Math.random()*8)+'s';
+      h.style.animationDelay = (Math.random()*10)+'s';
+      h.style.opacity = (0.4+Math.random()*0.5).toFixed(2);
+      h.textContent = ['💖','💕','💗','💓'][Math.floor(Math.random()*4)];
+      frag.appendChild(h);
+    }
+
+    for(let i=0;i<counts.spark;i++){
+      const s = document.createElement('div');
+      s.className = 'spark';
+      s.style.left = (Math.random()*100)+'%';
+      s.style.top = (Math.random()*100)+'%';
+      s.style.fontSize = (8+Math.random()*10)+'px';
+      s.style.animationDuration = (2.5+Math.random()*3)+'s';
+      s.style.animationDelay = (Math.random()*4)+'s';
+      s.textContent = '✨';
+      frag.appendChild(s);
+    }
+
+    fx.appendChild(frag);
+  }
+
+  /* ---------- Loading screen ---------- */
+  function runLoading(onDone){
+    const screen = document.getElementById('loadingScreen');
+    if(!CONFIG.loading){ screen.remove(); onDone(); return; }
+    const fill = document.getElementById('progressFill');
+    const duration = 3000;
+    const start = performance.now();
+    function tick(now){
+      const p = Math.min(1, (now-start)/duration);
+      fill.style.width = (p*100)+'%';
+      if(p<1) requestAnimationFrame(tick);
+      else{
+        setTimeout(()=>{
+          screen.classList.add('fade-out');
+          setTimeout(()=>{ screen.remove(); onDone(); }, 700);
+        }, 200);
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  /* ---------- Reveal-on-scroll for each section ----------
+     will-change is added right before the transition starts and removed
+     the moment it ends, so the compositor only pays for an extra GPU
+     layer while something is actually animating — not for the whole
+     time the card sits on screen. */
+  function promoteThenRelease(el){
+    el.style.willChange = 'transform, opacity';
+    const release = ()=>{ el.style.willChange = 'auto'; el.removeEventListener('transitionend', release); };
+    el.addEventListener('transitionend', release);
+    setTimeout(release, 900); // safety net if transitionend never fires
+  }
+
+  function setupRevealObserver(){
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(e=>{
+        if(e.isIntersecting){
+          e.target.classList.add('in-view');
+          e.target.querySelectorAll('.card, .gallery-item').forEach(promoteThenRelease);
+        }
+      });
+    }, { threshold: .4 });
+    document.querySelectorAll('[data-section]').forEach(s=>io.observe(s));
+  }
+
+  function scrollToNext(currentEl){
+    const sections = Array.from(document.querySelectorAll('[data-section]'));
+    const idx = sections.indexOf(currentEl);
+    const next = sections[idx+1];
+    if(next){
+      document.getElementById('app').scrollTo({ top: next.offsetTop, behavior:'smooth' });
+    }
+  }
+
+  /* ---------- Section 2: Gift card ---------- */
+  function initGiftCard(){
+    const section = document.getElementById('sec-gift');
+    if(!CONFIG.giftCard){ section.remove(); return; }
+    const wrap = document.getElementById('giftImageWrap');
+    const img = document.createElement('img');
+    img.src = CONFIG.giftImage || DEFAULT_HEART_SVG;
+    img.alt = 'gift';
+    img.decoding = 'async';
+    wrap.appendChild(img);
+    document.getElementById('giftBtnLabel').textContent = CONFIG.giftButton || 'Tap Love';
+
+    document.getElementById('btnGift').addEventListener('click', function(e){
+      spawnRipple(e, this);
+      section.classList.add('tapped');
+      unlockAudioOnce();
+      setTimeout(()=> scrollToNext(section), 380);
+    });
+  }
+
+  /* ---------- Section 3: Greeting 1 (typing effect) ---------- */
+  function initGreeting1(){
+    const section = document.getElementById('sec-greeting1');
+    if(!CONFIG.greeting1){ section.remove(); return; }
+    document.getElementById('greeting1Title').textContent = CONFIG.title || 'Happy Birthday 💖';
+    const target = document.getElementById('typedMessage');
+    const caret = document.getElementById('caret1');
+    const btn = document.getElementById('btnGreeting1');
+    const text = CONFIG.message || '';
+    let i = 0;
+
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(entry=>{
+        if(entry.isIntersecting && i===0){
+          typeNext();
+          io.disconnect();
+        }
+      });
+    }, { threshold:.5 });
+    io.observe(section);
+
+    function typeNext(){
+      if(i < text.length){
+        target.textContent += text.charAt(i);
+        i++;
+        setTimeout(typeNext, 28);
+      }else{
+        caret.remove();
+        btn.classList.add('show-btn');
+      }
+    }
+
+    btn.addEventListener('click', function(e){
+      spawnRipple(e, this);
+      scrollToNext(section);
+    });
+  }
+
+  /* ---------- Section 4: Love meter ---------- */
+  function initLoveMeter(){
+    const section = document.getElementById('sec-lovemeter');
+    if(!CONFIG.loveMeter){ section.remove(); return; }
+    const needle = document.getElementById('meterNeedle');
+    const btn = document.getElementById('btnLoveMeter');
+    const start = new Date(CONFIG.startDate);
+    let counting = false;
+
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(entry=>{
+        if(entry.isIntersecting && !counting){
+          counting = true;
+          needle.style.setProperty('--needle-deg', '78deg');
+          needle.classList.add('animate');
+          setTimeout(()=> btn.classList.add('show-btn'), 2400);
+          io.disconnect();
+        }
+      });
+    }, { threshold:.5 });
+    io.observe(section);
+
+    function updateCounters(){
+      const diff = Math.max(0, Date.now() - start.getTime());
+      const s = Math.floor(diff/1000);
+      document.getElementById('cDays').textContent  = Math.floor(s/86400);
+      document.getElementById('cHours').textContent = Math.floor((s%86400)/3600);
+      document.getElementById('cMins').textContent  = Math.floor((s%3600)/60);
+      document.getElementById('cSecs').textContent  = s%60;
+    }
+    updateCounters();
+    setInterval(updateCounters, 1000);
+
+    btn.addEventListener('click', function(e){
+      spawnRipple(e, this);
+      scrollToNext(section);
+    });
+  }
+
+  /* ---------- Section 5: Greeting 2 ---------- */
+  function initGreeting2(){
+    const section = document.getElementById('sec-greeting2');
+    if(!CONFIG.greeting2){ section.remove(); return; }
+    const wrap = document.getElementById('greeting2ImageWrap');
+    if(CONFIG.greeting2Image){
+      const img = document.createElement('img');
+      img.src = CONFIG.greeting2Image;
+      img.alt = 'memory';
+      img.style.borderRadius = '16px';
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      wrap.appendChild(img);
+    }else{
+      wrap.remove();
+    }
+    document.getElementById('greeting2Message').textContent = CONFIG.message2 || '';
+
+    document.getElementById('btnGreeting2').addEventListener('click', function(e){
+      spawnRipple(e, this);
+      scrollToNext(section);
+    });
+  }
+
+  /* ---------- Section 6: Gallery + lightbox ---------- */
+  function initGallery(){
+    const section = document.getElementById('sec-gallery');
+    if(!CONFIG.gallery){ section.remove(); return; }
+    const photos = (CONFIG.photos || []).filter(Boolean).slice(0,10);
+    const container = document.getElementById('galleryContainer');
+    if(photos.length === 0){ section.remove(); return; }
+
+    let grid;
+    if(photos.length === 1){
+      grid = document.createElement('div');
+      grid.className = 'gallery-grid count-1';
+    }else if(photos.length === 2){
+      grid = document.createElement('div');
+      grid.className = 'gallery-grid count-2';
+    }else{
+      grid = document.createElement('div');
+      grid.className = 'gallery-masonry';
+    }
+
+    const thumbEls = [];
+    photos.forEach((src, idx)=>{
+      const item = document.createElement('div');
+      item.className = 'gallery-item';
+      item.style.transitionDelay = (Math.min(idx,6)*0.08)+'s';
+      // Tiny alternating tilt for a scattered-photos feel, kept subtle.
+      const tilt = (idx % 2 === 0 ? -1 : 1) * (0.8 + Math.random()*1.4);
+      item.style.setProperty('--tilt', tilt.toFixed(2)+'deg');
+
+      const img = document.createElement('img');
+      img.src = src; img.alt = 'photo '+(idx+1);
+      img.loading = 'lazy';
+      img.decoding = 'async';
+
+      item.appendChild(img);
+      item.addEventListener('click', ()=> openLightbox(photos, idx, thumbEls));
+      thumbEls.push(img);
+      grid.appendChild(item);
+    });
+    container.appendChild(grid);
+  }
+
+  /* ---------- Lightbox: FLIP open/close + swipe + zoom ----------
+     Tapping a thumbnail morphs it (move + scale) into the centered
+     fullscreen view, and closing reverses the same motion back onto
+     that thumbnail — rather than a plain fade in/out. */
+  let lbPhotos = [], lbIndex = 0, lbThumbs = [], lbBusy = false;
+
+  function measureFlip(fromRect, stage){
+    const toRect = stage.getBoundingClientRect();
+    const scaleX = fromRect.width / toRect.width;
+    const scaleY = fromRect.height / toRect.height;
+    const dx = (fromRect.left + fromRect.width/2) - (toRect.left + toRect.width/2);
+    const dy = (fromRect.top + fromRect.height/2) - (toRect.top + toRect.height/2);
+    return { scaleX, scaleY, dx, dy };
+  }
+
+  function openLightbox(photos, index, thumbEls){
+    if(lbBusy) return;
+    lbPhotos = photos; lbIndex = index; lbThumbs = thumbEls;
+
+    const lb = document.getElementById('lightbox');
+    const stage = document.getElementById('lightboxStage');
+    const img = document.getElementById('lightboxImg');
+    const sourceEl = lbThumbs[lbIndex];
+    const startRect = sourceEl.getBoundingClientRect();
+
+    lbBusy = true;
+    img.classList.remove('zoomed');
+    lb.classList.add('show');
+    img.src = lbPhotos[lbIndex];
+
+    function afterLayout(){
+      stage.style.transition = 'none';
+      stage.style.transform = 'none';
+      const flip = measureFlip(startRect, stage);
+      stage.style.willChange = 'transform';
+      stage.style.transform = `translate(${flip.dx}px, ${flip.dy}px) scale(${flip.scaleX}, ${flip.scaleY})`;
+      // Force reflow so the inverted start position is registered before
+      // the transition kicks in on the next frame.
+      stage.getBoundingClientRect();
+      stage.style.transition = 'transform .45s var(--ease)';
+      requestAnimationFrame(()=>{ stage.style.transform = 'translate(0,0) scale(1,1)'; });
+      setTimeout(()=>{ lbBusy = false; stage.style.willChange = 'auto'; }, 460);
+    }
+
+    if(img.complete && img.naturalWidth){
+      requestAnimationFrame(()=> requestAnimationFrame(afterLayout));
+    }else{
+      img.onload = ()=> requestAnimationFrame(afterLayout);
+    }
+  }
+
+  function closeLightbox(){
+    if(lbBusy) return;
+    const lb = document.getElementById('lightbox');
+    const stage = document.getElementById('lightboxStage');
+    const img = document.getElementById('lightboxImg');
+    const sourceEl = lbThumbs[lbIndex];
+    img.classList.remove('zoomed');
+
+    if(!sourceEl){ lb.classList.remove('show'); return; }
+    lbBusy = true;
+
+    const startRect = sourceEl.getBoundingClientRect();
+    const flip = measureFlip(startRect, stage);
+
+    lb.classList.remove('show'); // backdrop fades out over the same .4s
+    stage.style.willChange = 'transform';
+    stage.style.transition = 'transform .4s var(--ease)';
+    requestAnimationFrame(()=>{
+      stage.style.transform = `translate(${flip.dx}px, ${flip.dy}px) scale(${flip.scaleX}, ${flip.scaleY})`;
+    });
+
+    setTimeout(()=>{
+      stage.style.transition = 'none';
+      stage.style.transform = 'none';
+      stage.style.willChange = 'auto';
+      img.src = '';
+      lbBusy = false;
+    }, 410);
+  }
+
+  function showLbIndex(newIndex){
+    if(lbPhotos.length===0) return;
+    lbIndex = (newIndex + lbPhotos.length) % lbPhotos.length;
+    const img = document.getElementById('lightboxImg');
+    img.classList.remove('zoomed');
+    img.src = lbPhotos[lbIndex];
+  }
+  function initLightboxEvents(){
+    const lb = document.getElementById('lightbox');
+    const img = document.getElementById('lightboxImg');
+    document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+    lb.addEventListener('click', (e)=>{ if(e.target === lb) closeLightbox(); });
+    img.addEventListener('click', ()=> img.classList.toggle('zoomed'));
+
+    let touchStartX = 0;
+    lb.addEventListener('touchstart', (e)=>{ touchStartX = e.touches[0].clientX; }, {passive:true});
+    lb.addEventListener('touchend', (e)=>{
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      if(Math.abs(dx) > 40){
+        if(dx < 0) showLbIndex(lbIndex+1);
+        else showLbIndex(lbIndex-1);
+      }
+    }, {passive:true});
+  }
+
+  /* ---------- Ripple micro-interaction ---------- */
+  function spawnRipple(e, el){
+    const rect = el.getBoundingClientRect();
+    const ripple = document.createElement('span');
+    ripple.className = 'ripple';
+    const size = Math.max(rect.width, rect.height);
+    ripple.style.width = ripple.style.height = size+'px';
+    ripple.style.left = ((e.clientX ?? rect.left+rect.width/2) - rect.left - size/2)+'px';
+    ripple.style.top = ((e.clientY ?? rect.top+rect.height/2) - rect.top - size/2)+'px';
+    el.appendChild(ripple);
+    setTimeout(()=> ripple.remove(), 650);
+  }
+
+  /* ---------- Music: autoplay only, no visible control ----------
+     Browsers block unmuted autoplay without a user gesture.
+     We try to play immediately; if blocked, we silently retry on
+     the very first tap/click/scroll anywhere on the page — there
+     is intentionally no play/pause button per the brief. */
+  let audioUnlocked = false;
+  function initMusic(){
+    if(!CONFIG.music) return;
+    const audio = document.getElementById('bgMusic');
+    audio.src = CONFIG.music;
+    audio.loop = !!CONFIG.loop;
+    audio.volume = 0.3;
+    if(CONFIG.autoplay){
+      audio.play().then(()=>{ audioUnlocked = true; }).catch(()=>{ /* wait for gesture */ });
+      ['click','touchstart','scroll','keydown'].forEach(evt=>{
+        window.addEventListener(evt, unlockAudioOnce, { once:true, passive:true });
+      });
+    }
+  }
+  function unlockAudioOnce(){
+    if(audioUnlocked) return;
+    const audio = document.getElementById('bgMusic');
+    if(!audio.src) return;
+    audio.play().then(()=>{ audioUnlocked = true; }).catch(()=>{});
+  }
+
+  /* ---------- Block manual scrolling ----------
+     Navigation is meant to happen only via the on-screen buttons.
+     overflow:hidden already stops native scrolling; this belt-and-braces
+     layer also stops wheel/trackpad and keyboard scroll keys. */
+  function lockManualScroll(){
+    const app = document.getElementById('app');
+    app.addEventListener('wheel', e=> e.preventDefault(), { passive:false });
+    app.addEventListener('touchmove', e=> e.preventDefault(), { passive:false });
+    window.addEventListener('keydown', (e)=>{
+      if(['ArrowUp','ArrowDown','PageUp','PageDown','Home','End',' '].includes(e.key)){
+        e.preventDefault();
+      }
+    });
+  }
+
+  /* ---------- Boot ---------- */
+  function boot(){
+    if(LITE) document.documentElement.classList.add('lite');
+    lockManualScroll();
+    buildBackgroundFX();
+    initMusic();
+    initGiftCard();
+    initGreeting1();
+    initLoveMeter();
+    initGreeting2();
+    initGallery();
+    initLightboxEvents();
+
+    const app = document.getElementById('app');
+    app.classList.remove('hidden');
+    setupRevealObserver();
+
+    // If gift card was removed (disabled), the first visible
+    // section should still animate in immediately.
+    requestAnimationFrame(()=>{
+      const first = document.querySelector('[data-section]');
+      if(first) first.classList.add('in-view');
+    });
+  }
+
+  runLoading(boot);
+})();
+</script>
+</body>
+</html>
